@@ -11,7 +11,7 @@ const dbConfig = {
     database: 'sbox-keygen'
 };
 const serverConfig = {
-    ip: '127.0.0.1',
+    ip: '10.175.175.1',
     port: 8002
 }
 const db = mysql.createConnection(dbConfig);
@@ -32,7 +32,7 @@ app.listen(serverConfig.port, serverConfig.ip, () => {
 });
 
 app.get('/', async (req, res) => {
-    console.log(req.method,);
+    console.log(req.method, req.url);
     res.send('racismAPI')
 })
 
