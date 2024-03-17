@@ -56,7 +56,9 @@ app.post('/check', jsonParser, async (req, res) => {
     response = {
         message: 'Record found!',
         ip: ipsData[0].ip,
-        bigoted: ipsData[0].bigoted
+        bigoted: ipsData[0].bigoted,
+        banned: ipsData[0].banned,
+        ban_reason: ipsData[0].ban_reason
     };
     console.log('Responded with: ', response);
     res.send(response)
