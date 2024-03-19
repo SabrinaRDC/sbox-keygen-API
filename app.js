@@ -38,13 +38,19 @@ app.get('/', async (req, res) => {
 })
 
 app.post('/check', jsonParser, async (req, res) => {
-    // const ip = req.headers['x-forwarded-for'].slice(req.headers['x-forwarded-for'].length/2+1);
-    const ip = req.socket.remoteAddress;
+    const ip = req.headers['x-forwarded-for'].slice(req.headers['x-forwarded-for'].length/2+1);
+    // const ip = req.socket.remoteAddress;
     console.log(ip, req.method,req.url, req.body);
     let response = {};
     if (req.body.password !== checkPassAPI) {
         res.status(401);
         response = { message: 'Password incorrect!' };
+        console.log('Responded with: ', response);
+        return res.send(response);
+    };
+    if (!Boolean(req.body.ip)) {
+        res.status(400);
+        response.message = 'IP is NULL you dummy';
         console.log('Responded with: ', response);
         return res.send(response);
     };
@@ -68,13 +74,19 @@ app.post('/check', jsonParser, async (req, res) => {
 })
 
 app.post('/post', jsonParser, async (req, res) => {
-    // const ip = req.headers['x-forwarded-for'].slice(req.headers['x-forwarded-for'].length/2+1);
-    const ip = req.socket.remoteAddress;
+    const ip = req.headers['x-forwarded-for'].slice(req.headers['x-forwarded-for'].length/2+1);
+    // const ip = req.socket.remoteAddress;
     console.log(ip, req.method,req.url, req.body);
-    let response = {};
+    let response = { message: ''};
     if (req.body.password !== postPassAPI ) {
         res.status(401);
-        response = { message: 'Password incorrect!' };
+        response.message = 'Password incorrect!';
+        console.log('Responded with: ', response);
+        return res.send(response);
+    };
+    if (!Boolean(req.body.ip)) {
+        res.status(400);
+        response.message = 'IP is NULL you dummy';
         console.log('Responded with: ', response);
         return res.send(response);
     };
