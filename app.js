@@ -12,10 +12,11 @@ const dbConfig = {
     multipleStatements: true
 };
 const serverConfig = {
-    ip: '10.175.175.1',
+    ip: '',
     port: 8002
 }
 const db = mysql.createConnection(dbConfig);
+const IPToken = '';
 const checkPassAPI = '';
 const postPassAPI = '';
 
@@ -26,6 +27,11 @@ function query(SQLquery, data){
             resolve(response);
         })
     });
+}
+
+async function getIPInfo(ip, token){
+    let response = await fetch(`https://api.ip2location.io/?key=${token}&ip=${ip}`)
+   return await response.json();
 }
 
 app.listen(serverConfig.port, serverConfig.ip, () => {
@@ -42,6 +48,7 @@ app.post('/check', jsonParser, async (req, res) => {
     // const ip = req.socket.remoteAddress;
     console.log(ip, req.method,req.url, req.body);
     let response = {};
+    let ipInfo;
     if (req.body.password !== checkPassAPI) {
         res.status(401);
         response = { message: 'Password incorrect!' };
@@ -54,12 +61,19 @@ app.post('/check', jsonParser, async (req, res) => {
         console.log('Responded with: ', response);
         return res.send(response);
     };
-    ipsData = await query('SELECT * FROM `sbox-keygen`.ips WHERE ip = ?;', [req.body.ip])
+    ipsData = await query('SELECT * FROM `sbox-keygen`.ips WHERE ip = ?;', [req.body.ip]);
     if (!ipsData[0]) {
-        res.status(404);
-        response = { message: `No record found for ${req.body.ip}!`};
-        console.log('Responded with: ', response);
-        return res.send(response);
+        ipInfo = await getIPInfo(req.body.ip, IPToken);
+        await query('INSERT INTO ips (ip, is_proxy, country_code, country_name, region_name, city_name) VALUES (?, ?, ?, ?, ?, ?);',[req.body.ip, ipInfo.is_proxy, ipInfo.country_code, ipInfo.country_name, ipInfo.region_name, ipInfo.city_name]);
+        console.log(`Record created for ${req.body.ip}`);
+        ipsData = await query('SELECT * FROM `sbox-keygen`.ips WHERE ip = ?;', [req.body.ip]);
+    };
+    if (ipsData[0].is_proxy == null) {
+        console.log(`Found ip with NULL is_proxy! ${ip}(${ipsData[0].name})`);
+        ipInfo = await getIPInfo(req.body.ip, IPToken);
+        await query('UPDATE `sbox-keygen`.ips SET is_proxy = ?, country_code = ?, country_name = ?, region_name = ?, city_name = ? WHERE ip = ?;', [ipInfo.is_proxy, ipInfo.country_code, ipInfo.country_name, ipInfo.region_name, ipInfo.city_name, req.body.ip]);
+        ipsData = await query('SELECT * FROM `sbox-keygen`.ips WHERE ip = ?;', [req.body.ip]);
+        console.log(`Record updated for ${req.body.ip}(${ipsData[0].name})`);
     };
     res.status(200);
     response = {
@@ -67,7 +81,8 @@ app.post('/check', jsonParser, async (req, res) => {
         ip: ipsData[0].ip,
         bigoted: ipsData[0].bigoted,
         banned: ipsData[0].banned,
-        ban_reason: ipsData[0].ban_reason
+        ban_reason: ipsData[0].ban_reason,
+        is_proxy: ipsData[0].is_proxy
     };
     console.log('Responded with: ', response);
     res.send(response)
