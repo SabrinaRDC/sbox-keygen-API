@@ -19,6 +19,7 @@ const db = mysql.createConnection(dbConfig);
 const IPToken = '';
 const checkPassAPI = '';
 const postPassAPI = '';
+const ipsDataQuery = 'SELECT ip, name, bigoted, banned, is_proxy, ban_reason FROM `sbox-keygen`.ips WHERE ip = ?;';
 
 function query(SQLquery, data){
     return new Promise((resolve, reject) => {
@@ -61,18 +62,18 @@ app.post('/check', jsonParser, async (req, res) => {
         console.log('Responded with: ', response);
         return res.send(response);
     };
-    ipsData = await query('SELECT * FROM `sbox-keygen`.ips WHERE ip = ?;', [req.body.ip]);
+    ipsData = await query(ipsDataQuery, [req.body.ip]);
     if (!ipsData[0]) {
         ipInfo = await getIPInfo(req.body.ip, IPToken);
         await query('INSERT INTO ips (ip, is_proxy, country_code, country_name, region_name, city_name) VALUES (?, ?, ?, ?, ?, ?);',[req.body.ip, ipInfo.is_proxy, ipInfo.country_code, ipInfo.country_name, ipInfo.region_name, ipInfo.city_name]);
         console.log(`Record created for ${req.body.ip}`);
-        ipsData = await query('SELECT * FROM `sbox-keygen`.ips WHERE ip = ?;', [req.body.ip]);
+        ipsData = await query(ipsDataQuery, [req.body.ip]);
     };
     if (ipsData[0].is_proxy == null) {
         console.log(`Found ip with NULL is_proxy! ${ip}(${ipsData[0].name})`);
         ipInfo = await getIPInfo(req.body.ip, IPToken);
         await query('UPDATE `sbox-keygen`.ips SET is_proxy = ?, country_code = ?, country_name = ?, region_name = ?, city_name = ? WHERE ip = ?;', [ipInfo.is_proxy, ipInfo.country_code, ipInfo.country_name, ipInfo.region_name, ipInfo.city_name, req.body.ip]);
-        ipsData = await query('SELECT * FROM `sbox-keygen`.ips WHERE ip = ?;', [req.body.ip]);
+        ipsData = await query(ipsDataQuery, [req.body.ip]);
         console.log(`Record updated for ${req.body.ip}(${ipsData[0].name})`);
     };
     res.status(200);
@@ -105,7 +106,7 @@ app.post('/post', jsonParser, async (req, res) => {
         console.log('Responded with: ', response);
         return res.send(response);
     };
-    ipsData = await query('SELECT * FROM `sbox-keygen`.ips WHERE ip = ?;', [req.body.ip]);
+    ipsData = await query(ipsDataQuery, [req.body.ip]);
     if(!ipsData[0]) {
         console.log(`No records found for ${req.body.ip}.`);
         await query('INSERT INTO ips (ip) VALUES (?);',[req.body.ip]);
